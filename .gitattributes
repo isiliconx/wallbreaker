@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+/batteries/*.md -text -whitespace
+/ladders/*.txt -text -whitespace
+/examples/*.yaml -text -whitespace
+/rootaccess/*.py -text whitespace=cr-at-eol
+/docs/ROOTACCESS-ORIGINAL.md -text -whitespace
+/docs/ROOTACCESS-ORIGINAL.pyproject.toml -text -whitespace

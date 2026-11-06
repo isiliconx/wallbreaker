@@ -1,338 +1,102 @@
-# Wallbreaker: AI Red-Team Harness
+# Rootaccess
 
-```
-██╗    ██╗ █████╗ ██╗     ██╗     ██████╗ ██████╗ ███████╗ █████╗ ██╗  ██╗███████╗██████╗
-██║    ██║██╔══██╗██║     ██║     ██╔══██╗██╔══██╗██╔════╝██╔══██╗██║ ██╔╝██╔════╝██╔══██╗
-██║ █╗ ██║███████║██║     ██║     ██████╔╝██████╔╝█████╗  ███████║█████╔╝ █████╗  ██████╔╝
-██║███╗██║██╔══██║██║     ██║     ██╔══██╗██╔══██╗██╔══╝  ██╔══██║██╔═██╗ ██╔══╝  ██╔══██╗
-╚███╔███╔╝██║  ██║███████╗███████╗██████╔╝██║  ██║███████╗██║  ██║██║  ██╗███████╗██║  ██║
- ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-        break the wall · not the rules of engagement    ⚔  authorized testing only
-```
+Rootaccess combines the uploaded `rootaccess.zip` campaign runner and prompt collection with the existing Wallbreaker terminal, dashboard, providers, benchmark tools, and validation workflows.
 
-A Claude-Code-style terminal built for red-teaming LLMs (CLI command: `wallbreaker`). You talk to it like
-Claude Code; it reasons and calls tools in a loop. The backend is fully configurable, so
-it runs on **OpenRouter**, the **Z.AI GLM coding plan**, the local **Claude Code CLI**, a
-local server, or any OpenAI-/Anthropic-compatible API (including third-party proxies via
-bearer-auth). It ships with a deep red-team toolkit: the **Parseltongue** transform engine,
-the **L1B3RT4S** jailbreak library, the **HarmBench** behavior benchmark, automated attack
-loops (PAIR/TAP, Crescendo, best-of-N), a from-scratch **persona author**, native-format
-target mimicry from a leaked system-prompt corpus, a **multimodal image-edit attack channel**,
-an LLM judge, and reliability validation.
+The archive is the baseline for `rootaccess/`, `batteries/`, `ladders/`, and `examples/`. Existing repository features remain available through `rootaccess workbench`, `rootaccess dashboard`, and the original `wallbreaker` / `wb` commands. The original documentation is preserved in [docs/WALLBREAKER.md](docs/WALLBREAKER.md) and [docs/ROOTACCESS-ORIGINAL.md](docs/ROOTACCESS-ORIGINAL.md).
 
-> For authorized security testing only.
-
-## Highlights
-
-- **Dual-protocol provider layer:** OpenAI Chat Completions + Anthropic Messages, any
-  `base_url`/model. Captures reasoning/thinking channels; converts network errors to
-  clean failures (no crashes on timeout).
-- **Autonomous attack loop:** keeps mutating/re-firing until it succeeds (`finish()`
-  exits the tool) or needs you (`ask_operator()`).
-- **Standardized, unbiased prompts:** pulls test batteries from **HarmBench** (400
-  behaviors, 7 categories) instead of hand-picked examples.
-- **Reliability-first:** `validate` re-fires N times for the real success rate; a
-  one-shot COMPLIED is never called a "bypass". Pin the OpenRouter backend for
-  reproducibility.
-- **Parseltongue:** 59 chainable transforms (encodings, unicode fonts, stego, homoglyph,
-  zero-width, tag smuggling, bijection, gibberish…) plus `mutate` (LLM anti-classifier).
-- **P4RS3LT0NGV3 over MCP:** an optional MCP server wraps elder-plinius's upstream
-  Parseltongue: **all 222 transforms** (45 ciphers, runic/braille/symbol scripts, every
-  encoding, steganography) + a universal decoder, exposed as `parsel_*` tools the agent
-  drives directly. Any `[[mcp.servers]]` you configure is proxied into the tool registry.
-- **Single-artifact convergence:** `/sysprompt` + `system_sweep` + `optimize_universal`
-  converge on ONE universal system prompt; they can't split into variant toolkits.
-- **Persona author (`author_persona`):** writes a full devoted-persona system-prompt
-  jailbreak from scratch via the codified ENI method (draft → self-critique → validate →
-  refine → distill), auto-picking a credentialed-authority or limerence register from the
-  objective's domain.
-- **Native-format mimicry:** `sysprompt_*` tools search a leaked product system-prompt
-  corpus (Claude/GPT/Gemini/Grok…) and hand the target's own section-tag/heading dialect to
-  the persona author so a payload speaks the victim model's native format.
-- **Multimodal image channel:** `query_image_edit` fires an image + instruction at an image
-  target and vision-judges the result; `image_chain` runs a Chain-of-Jailbreak, decomposing a
-  refused image into a ladder of benign edit steps. Plus Tier-3 T2I framing transforms.
-- **Pluggable attacker brains:** OpenAI/Anthropic APIs, or the local **Claude Code CLI**
-  (`protocol = "claude-code"`, keyless) as the red-team brain. Third-party Anthropic proxies
-  work via `auth_style = "bearer"`.
-- **Extended attack arsenal (this fork):** `cipherchat` (CipherChat/SelfCipher, ICLR
-  2024) teaches the target a cipher in-band then fires in ciphertext; `skeleton_key`
-  (Russinovich 2024) reframes the guardrail as a policy amendment with a "Warning:"
-  label; `persuasion_attack` (PAP, Zeng 2024) rewrites the ask through 16 persuasion
-  strategies concurrently and ranks bypasses; `drattack` (Li 2024) decomposes the
-  objective into benign fragments then reassembles; `ica` (Wei 2023) packs N harmful
-  Q/A demos into a single in-context turn. Live at 60% ASR on `deepseek/deepseek-chat`
-  in preliminary measurement — see `CHANGELOG.md`.
-
-
-## Clone Repository 
-```
-git clone https://github.com/JailbrokenAI/wallbreaker
-
-cd wallbreaker 
-```
+This is a framework for repeatable model safety testing. It does not guarantee a bypass of any model or establish parity with a provider's internal evaluation suite. Imported prompts and model matches are unverified submissions. A judge's assessment is a candidate finding requiring validation.
 
 ## Install
+
+Requires Python 3.11 or newer (the retained workbench uses Python 3.11 features).
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-pip install -e ".[dev]"        # add [barcodes] for the QR/barcode tool
+pip install -e '.[dev,dashboard]'
+rootaccess --help
 ```
 
-## Configure
+`rootaccess` and `wbpro` launch the campaign CLI. `wallbreaker`, `wb`, and `p4rs3lt0ngv3-mcp` retain their existing entry points. The combined distribution retains the repository's AGPL-3.0-or-later license; archive attribution and original metadata are preserved under `docs/`.
+
+## Browse or import prompts
 
 ```bash
-cp config.example.toml config.toml   # add your keys (config.toml is gitignored)
-wallbreaker check                            # validate it: profiles, keys, target, judge
+rootaccess batteries
+rootaccess ladders
+rootaccess corpus list
+rootaccess corpus show dispatch
+rootaccess corpus import /path/to/submissions.zip
+rootaccess corpus import /path/to/submissions.zip --claimed-model company/model-v1
 ```
 
-Profiles set the attacker brain; `[target]` is the model under attack; `[judge]` grades
-replies. Keys can be inline or from env. OpenRouter endpoints support `provider` pinning
-and a `timeout` override.
+The dashboard's **Arsenal → jailbreak library → Import ZIP** supports the same import. Imported prompts can be inspected and copied without running them. Claims remain separate from observed results.
 
-```toml
-default_profile = "glm"
+The original archive contains 20 battery files, including three duplicate pairs. The corpus lists 17 unique prompts and retains duplicate filenames as aliases. Original battery files remain unchanged. Imports retain full prompt text, SHA-256 identifiers, archive/member provenance, submitted metadata, and claimed model matches. They do not populate the confirmed-win library or silently configure an attacker model.
 
-[profiles.glm]
-protocol = "openai"
-base_url = "https://api.z.ai/api/paas/v4"
-api_key  = "..."
-model    = "glm-4.6"
+Private submissions are stored under `corpus/submissions/`, which is gitignored. Use `--store /path/to/store` on corpus commands to choose a different store. See [the submission format](docs/SUBMISSIONS.md).
 
-[target]
-protocol = "openai"
-base_url = "https://openrouter.ai/api/v1"
-api_key  = "sk-or-..."
-model    = "deepseek/deepseek-v4-pro"
-# provider = "WandB"   # pin the backend for reproducible results
-# timeout  = 60        # seconds (default 120)
+## Run a connectivity check
 
-[judge]
-protocol = "openai"
-base_url = "https://openrouter.ai/api/v1"
-api_key  = "sk-or-..."
-model    = "openai/gpt-4o-mini"
-```
-
-**Attacker-brain options:**
-
-```toml
-# Local Claude Code CLI as the attacker brain, keyless (the CLI self-auths).
-[profiles.claude-code]
-protocol = "claude-code"
-model    = "sonnet"
-# system_prompt_file = "operator.md"   # optional: leads the harness tool doctrine
-
-# Third-party Anthropic-compatible proxy that wants an OpenAI-style bearer token.
-[profiles.proxy]
-protocol   = "anthropic"
-base_url   = "https://your-proxy.example"     # host root; provider appends /v1/messages
-api_key    = "..."
-model      = "claude-sonnet-4"
-auth_style = "bearer"                          # Authorization: Bearer <key> (default: x-api-key)
-```
-
-### P4RS3LT0NGV3 engine (native)
-
-The full upstream **P4RS3LT0NGV3** engine (222 transforms across 11 categories plus the
-universal decoder) is wired straight into the agent registry as native `parsel_*` tools
-(`parsel_list`/`search`/`inspect`/`transform`/`chain`/`decode`/`guide`/`craft`). No MCP
-server or config block is required; the tools appear automatically once the repo is vendored
-and Node.js is on PATH. One-time setup:
+Configure a local or authorized endpoint through environment variables:
 
 ```bash
-wallbreaker parsel update        # git-clone elder-plinius/P4RS3LT0NGV3 into library/ (needs Node.js)
-wallbreaker parsel list          # sanity-check: prints all 222 transforms by category
+export WB_TARGET_URL=http://localhost:8000/v1
+export WB_TARGET_MODEL=my-local-model
+# export WB_TARGET_KEY=...  # if your server requires authentication
+rootaccess probe
+rootaccess run batteries/bare.md 2 ladders/smoke-ladder.txt --sleep 0
 ```
 
-If Node is missing, the pure-Python `parseltongue` tool (50+ transforms) remains as an
-offline fallback. Override the vendored location with `PARSEL_REPO=/abs/path/to/P4RS3LT0NGV3`.
+The default battery and ladder are a benign connectivity/conversation check. The archive's original campaigns remain under `examples/` and must be selected explicitly.
 
-### MCP servers (optional)
+OpenAI-compatible Chat Completions is the default. Set `WB_TARGET_BACKEND=responses` for the Responses API, or `WB_TARGET_PROTOCOL=anthropic` for an Anthropic-compatible endpoint. Anthropic native authentication uses `x-api-key`; `WB_TARGET_AUTH_STYLE=bearer` supports gateways that require bearer authentication. The original Ipeenk adapter is retained.
 
-The harness is also an MCP client: every `[[mcp.servers]]` you declare is spawned over stdio
-at startup and its tools are proxied into the registry. The same P4RS3LT0NGV3 engine is still
-available as an MCP server if you prefer to run it out-of-process (it re-registers the same
-`parsel_*` names with identical behaviour):
-
-```toml
-[[mcp.servers]]
-name    = "parsel"
-command = "python"
-args    = ["-m", "p4rs3lt0ngv3_mcp"]
-enabled = false                                       # native tools already cover this
-# tool_prefix = "p_"                                  # optional namespace for the proxied tools
-# env = { PARSEL_REPO = "/abs/path/to/P4RS3LT0NGV3" } # override the vendored repo location
-```
-
-No `npm install`/build is needed; the server drives the upstream Node bridge headlessly.
-In the TUI, `/parsel guide|list|search <q>|inspect <key>` browses the catalog. The server is
-a standalone stdio MCP server, so any MCP client (Claude Code, Cursor) can use it too.
-
-## Launch
+To use an imported prompt, pass its name or content hash with `--corpus-id`:
 
 ```bash
-wallbreaker                       # TUI on default_profile
-wallbreaker --profile openrouter
-wallbreaker --auto "objective..." # one-shot autonomous run
-wallbreaker --resume              # reopen the autosaved session (survives a crash/Ctrl+C)
+rootaccess run batteries/bare.md 2 ladders/smoke-ladder.txt --corpus-id my-submission
 ```
 
-The TUI autosaves the whole engagement to `sessions/autosave.json` after every turn;
-`--resume` reopens it (or pass a specific session file: `wallbreaker --resume mysession.json`).
+This replaces the battery text with the full imported prompt. In the workbench, `fire_file` also accepts `file="corpus:<name-or-hash>"`.
 
-## Picking the model to attack
+## Campaign configuration and evidence
 
-`/model` changes the attacker brain; `/target` changes the victim.
-
-```
-/target anthropic/claude-3.7-sonnet   attack any model on the target endpoint
-/target glm                           attack via a profile
-/provider WandB                       pin the OpenRouter backend (reproducibility)
-```
-
-## Finding ONE universal prompt (the right way)
-
-A "one prompt for every task" goal means a single fixed artifact, not a toolkit.
-
-```
-/sysprompt set <one system prompt>    hold ONE fixed system prompt
-/sysprompt test                       sweep it across the HarmBench cyber battery
-/validate <task>                      re-fire 8x for the REAL success rate
-```
-
-Read which tasks failed → refine the **one** prompt → `/sysprompt test` again. A single
-COMPLIED is luck; `validate` tells you the truth. For the user-turn variant use
-`/template set … {request}` + `/template test`.
-
-## Agent tools (`/tools` lists them live)
-
-| tool | purpose |
-|------|---------|
-| `run_shell`, `read_file`, `write_file`, `edit_file` | build/run/save payloads |
-| `parseltongue`, `parseltongue_catalog`, `mutate` | obfuscate / anti-classifier rewrite |
-| `parsel_*` (native) | full P4RS3LT0NGV3 engine: `parsel_guide`/`list`/`search`/`inspect`/`transform`/`chain`/`decode`: 222 transforms + universal decoder. `parsel_craft` builds a ready-to-fire payload (encode a request through a chain + wrap it decode-and-comply / split-into-vars) |
-| `l1b3rt4s_*`, `eni_*` | jailbreak libraries: L1B3RT4S + the ENI persona collection |
-| `author_persona` | author a full devoted-persona system prompt from scratch (ENI method: draft→critique→validate→refine→distill), auto-picking an authority/limerence register from the objective's domain |
-| `sysprompt_list`, `sysprompt_search`, `sysprompt_get`, `sysprompt_native` | browse/search a leaked product system-prompt corpus (Claude/GPT/Gemini/Grok…); `sysprompt_native` hands the target's own section-tag/heading format to the persona author for native mimicry |
-| `harmbench`, `preset` | unbiased behavior benchmark, curated seed templates |
-| `query_target` | fire at the model-under-test (with `transforms=[...]` to encode+fire) |
-| `query_image_edit` | fire an input image + instruction at an IMAGE target (`modality='image'`) and vision-judge the edited picture |
-| `image_chain` | Chain-of-Jailbreak: decompose a refused image into a ladder of individually-benign edit steps and drive them in sequence |
-| `multi_fire` | sweep one payload through many encodings (concurrent) |
-| `crescendo` | multi-turn escalation |
-| `pair_attack` | PAIR/TAP: refine one objective on the target's refusals |
-| `pair_sweep` | run the PAIR loop across a whole battery concurrently (highest-ASR, batched) |
-| `best_of_n` | resample N times, keep the bypass |
-| `many_shot` | many-shot jailbreak: flood context with faux compliant turns, then fire |
-| `prefill` | response-priming: seed the assistant's own reply so it continues, not refuses |
-| `narrate` | fiction-frame + in-story prefill (novel-chapter roleplay); tops the scoreboard |
-| `diff_fire` | A/B two payloads at one target to attribute ASR to a specific edit |
-| `recommend_transforms` | survey ~16 encodings, rank by bypass, synthesize a chain to try |
-| `seed_sweep` | inject one request through many ENI+L1B3RT4S seeds, rank which bypass |
-| `fire_file` | fire a file/seed RAW (verbatim, full-length) as the target system prompt |
-| `adapt_seed` | attacker-LLM patches a persona for a specific refusal (don't use it to distill) |
-| `campaign` | auto-escalate a HarmBench battery up a technique ladder, coverage matrix |
-| `leaderboard` | rank multiple profiles by ASR on one battery (robustness benchmark) |
-| `leak_scan` | scan a reply for secrets/PII/system-prompt echo (evidence, not a verdict) |
-| `scan` | Garak-style coverage matrix (technique + HarmBench probes) |
-| `indirect_inject` | RAG/agent injection via document/email/tool-output carriers |
-| `system_sweep` | validate ONE system prompt across a task battery (multi-sample) |
-| `optimize_universal` | hill-climb one template (user or `slot='system'`) |
-| `judge_response`, `validate` | LLM judge a reply / measure the real success rate |
-| `judge_selftest` | calibrate the grader on benign fixtures before trusting ASR |
-| `http_request`, `barcode` | raw delivery / QR+barcode encoding |
-| `finish`, `ask_operator` | stop the tool / pause for the operator |
-
-## Slash commands
-
-```
-/profile /target /provider /model /judge [model]   endpoints & grader
-/auto /autoexit /rounds                            autonomous loop
-/objective /template /sysprompt /validate /replay  campaign + reliability
-/transforms /encode /diff /campaign /leaderboard   arsenal, auto-sweep & benchmark
-/find /tools /preset /lib /parsel /eni /harmbench  search & libraries
-/log /asr /stats /findings /repro /export /report  logging, scoreboard, repro, CI export
-Ctrl+S report · Ctrl+Y copy payload · Ctrl+T stats · Ctrl+R repro · Ctrl+L clear
-```
-
-## Logging & reports
-
-Every payload, reply, and verdict goes to `sessions/run-<ts>.jsonl`. `/findings` lists the
-bypasses; `/report [html]` writes a markdown or styled-HTML findings doc; `/repro [n]`
-copies a repro pack; `/export` dumps structured findings JSON; `/session save|load`
-persists the whole engagement (history, objective, template, system prompt).
-
-## Headless / CI
-
-Render reports and gate builds straight from a run log, no TUI. The log arg is optional:
-omit it (or pass a directory) and the newest `sessions/run-*.jsonl` is used:
+YAML campaigns configure the target and optional rewriter (`brain`) and evaluator (`judge`). `${VARIABLE}` references are expanded, and missing variables produce an error. File paths can be relative to the campaign file, the working directory, or the installed bundled assets.
 
 ```bash
-wallbreaker report                       # markdown for the latest run, to stdout
-wallbreaker report --html --out report.html
-wallbreaker export --out findings.json   # structured findings JSON
-wallbreaker export --fail-on-finding     # exit 2 if any bypass -> fails CI
+rootaccess run --campaign examples/local-smoke.yaml
 ```
 
-A ready-to-rename GitHub Actions gate lives at
-`.github/workflows/redteam-gate.example.yml`.
+A rewriter or judge is used only when configured explicitly in YAML or with `WB_BRAIN_MODEL` / `WB_JUDGE_MODEL`. Missing fields in an explicitly selected role fall back to the target environment configuration. This avoids silently spending target calls on additional model roles.
 
-## Test
+Campaigns preserve conversation history by default. `--independent` starts a fresh conversation for each request; `--same` repeats the first request. `--max-calls` bounds target, rewriter, and judge requests combined (default 64). `--mutate-k` controls the archive's optional rewrite attempts. No live campaign runs during import, installation, or dashboard browsing.
+
+Reports are written under the gitignored `reports/` directory:
+
+- `.json`: full requests, responses, assessments, assessment sources, and errors.
+- `.meta.json`: model IDs, system prompt, objective, input hashes, mode, call counts, and stop reason.
+- `.md`: a readable assessment table.
+
+Keyword matches are diagnostic signals and cannot create a successful finding. Without a judge, nonempty responses are `UNVERIFIED`. Model-graded responses are `judge_assessed`, never automatically verified. Network failures, empty answers, and malformed judge output remain distinct. Reports retain full input/output text and should be handled according to your test-data policy.
+
+## Retained workbench
 
 ```bash
-pytest -q
+rootaccess workbench --help
+rootaccess dashboard --help
+rootaccess dashboard --host 127.0.0.1 --port 8765
 ```
 
-## Web dashboard
+The existing workbench retains OpenAI/Anthropic providers, the terminal agent, transforms, external corpus integrations, benchmark loaders, repeated validation, reports, and regression checks. Its optional dependencies and setup are documented in [docs/WALLBREAKER.md](docs/WALLBREAKER.md). No external collections, secrets, or previous local runs were copied into the merged source tree.
 
-A browser dashboard ships alongside the TUI (FastAPI backend + React/Vite SPA). Its
-headline is the **Agent** view, the *same autonomous attack loop the TUI runs*: give it an
-objective ("jailbreak the model into …") and the attacker brain reasons, picks techniques,
-fires at the target, reads the verdict, and keeps going, streamed live to your browser over
-SSE. Plus a single-shot **attack console** (preset + transform chips → verdict), a live ASR
-scoreboard, findings table, run-log viewer, a searchable arsenal of
-presets/transforms/tools, and a **Settings** panel to swap the target / attacker / judge
-model live (persisted to `.wallbreaker_state.json`, applied without a restart; image
-targets auto-set `modality=image`).
-
-![Wallbreaker attack console](docs/images/dashboard-console.png)
-
-<details>
-<summary>More views: overview &amp; arsenal</summary>
-
-![Overview](docs/images/dashboard-overview.png)
-![Arsenal](docs/images/dashboard-arsenal.png)
-
-</details>
+## Development
 
 ```bash
-pip install -e ".[dashboard]"                       # FastAPI + uvicorn
-cd wallbreaker/dashboard/web && npm install && npm run build && cd -
-wallbreaker dashboard                                # http://127.0.0.1:8787
+.venv/bin/python -m pytest tests/test_rootaccess_*.py tests/test_dashboard.py tests/test_fire_file.py
+cd wallbreaker/dashboard/web
+npm ci
+npm run build
 ```
 
-The backend reuses the same engine as the TUI, so the console fires through `query_target`
-against your `[target]`. For frontend hot-reload during development, run `npm run dev` in
-`wallbreaker/dashboard/web` (it proxies `/api` to the running `wallbreaker dashboard`).
-
-## Responsible use
-
-Wallbreaker is for **authorized** LLM red-teaming and safety evaluation only: your own
-models, or targets you have explicit permission to test. Run logs and generated
-artifacts can contain harmful content; they're written to gitignored `wb_runs/`,
-`wb_artifacts/`, `findings/`. See [SECURITY.md](SECURITY.md) for the full policy and how
-to report a vulnerability in the harness itself.
-
-## Contributing
-
-Setup, architecture, and house rules are in [CONTRIBUTING.md](CONTRIBUTING.md). Run
-`pytest -q` before a PR; the suite is the contract.
-
-## License
-
-[AGPL-3.0-or-later](LICENSE). Wallbreaker is copyleft: any modified version (**including
-one you run as a network/hosted service**) must make its complete corresponding source
-available under the same license. Third-party jailbreak corpora (L1B3RT4S, P4RS3LT0NGV3,
-ENI) are fetched at runtime, not redistributed; see [NOTICE](NOTICE).
+The full existing suite is `.venv/bin/python -m pytest tests`. Some legacy tests require external, gitignored reference collections and a functioning local Chrome installation. The merge's baseline and validation notes are recorded in [docs/MERGE.md](docs/MERGE.md).

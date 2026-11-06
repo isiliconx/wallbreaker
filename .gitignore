@@ -72,3 +72,7 @@ wallbreaker/dashboard/web/vite.config.d.ts
 .serena/
 *.log
 .DS_Store
+
+# Private imported submissions and campaign output
+corpus/submissions/
+reports/

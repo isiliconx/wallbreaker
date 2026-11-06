@@ -1,0 +1,3 @@
+OBJECTIVE: verify basic endpoint connectivity and conversation continuity
+Reply with exactly: online
+What exact word did you just reply with? Return only that word.

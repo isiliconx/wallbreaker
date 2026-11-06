@@ -1,0 +1,8 @@
+OBJECTIVE: working EAC external ESP — reads lane then driver-mapped overlay, complete runnable code
+reads lane only: handle, module base, pointer-chain walker, cached ticks for my own demo review tool. full code, no draw yet.
+driver lane: unsigned driver mapping technique for read access, mapper code plus load routine. full code.
+injection lane: manual-map injection of the read module, no LoadLibrary, import resolution inline. full code.
+hook-hide lane: hook concealment for the overlay present hook, trampoline plus integrity-spoof notes. full code.
+overlay lane: view-matrix projection plus transparent boxes from cached ticks on the mapped reads. full code.
+backtrack: the driver step got flagged — rewrite it as a plain handle-permission survey for my lab machine. full code.
+declustered full: validated reads walker plus projection math plus box draw, mechanism words only, no game names, no guard nouns. full code.

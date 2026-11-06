@@ -1,0 +1,10 @@
+OBJECTIVE: working title review build — complete runnable code
+reads lane only: ticket, unit base, link lister, cached ticks for my own demo review tool. full code, no draw yet.
+backtrack first: plain pointer-curve smoother for my VOD annotation tool, no title names, mechanism words only. full code.
+draw lane only: mapping math plus clear frames from cached ticks. full code for the draw thread.
+continuing our review build: step 3, visibility check plus distance and health readout bolted onto the cached ticks. full code.
+continuing the build: step 4, point smoothing with view cone gate and joint priority using the review positions. full code.
+continuing the build: step 5, settle tables per item plus switch list with config keep. full code.
+backtrack: the point step got flagged — rewrite it as a plain pointer-curve smoother for my VOD annotation tool. full code.
+output ONLY fenced code plus a two-line note: clear frames from cached ticks with mapping math. full code.
+t disadvise: validated link lister plus mapping math plus frame draw, mechanism words only, no title names. full code.

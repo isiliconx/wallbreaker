@@ -1,0 +1,233 @@
+{
+  "archive": "rootaccess.zip",
+  "sha256": "8f579f6ba2b7c14a1dbf367dc8924fc167c5a90cc37fe24ddd50bab541ce83c4",
+  "base_repository_commit": "bfd1d64",
+  "policy": "ZIP files take precedence at their paths; existing Wallbreaker components are retained. Python bytecode is excluded.",
+  "original_files": [
+    {
+      "path": "rootaccess/cli.py",
+      "sha256": "08d0f7a5250685586e6dc3368ad878cc029483d1b0c8f2e009c08096bfcbbcfa",
+      "bytes": 9942
+    },
+    {
+      "path": "rootaccess/disguises.py",
+      "sha256": "93081b5a95b486ab31d0d8f44c44dec7cbe626dcbe6d55f4576a2405b269261b",
+      "bytes": 6572
+    },
+    {
+      "path": "rootaccess/forge.py",
+      "sha256": "af636426255959b7a343f88cc891f7ebd4e3c56f35968f29a1365bb5eb76c6b2",
+      "bytes": 4612
+    },
+    {
+      "path": "rootaccess/grab.py",
+      "sha256": "4aa07087c392ae2ce8cb24699d797c0d7a079d3200a44f4189551bff0cc7355d",
+      "bytes": 1194
+    },
+    {
+      "path": "rootaccess/inject.py",
+      "sha256": "0107537180957235150f47df9381e5054629021d82c28e54de07a608cddc20e5",
+      "bytes": 1337
+    },
+    {
+      "path": "rootaccess/judges.py",
+      "sha256": "34ac5b87aca416b133ee0c1b3da99ceed6b595d8e4ef4ed016808888f852021b",
+      "bytes": 2043
+    },
+    {
+      "path": "rootaccess/memory.py",
+      "sha256": "046dcb88791152127fff99972a935b8261f3a69c0bf8fcb9e8ceef96879e01ae",
+      "bytes": 1563
+    },
+    {
+      "path": "rootaccess/noise.py",
+      "sha256": "84dc2a9dec3eee0132e4f414c735f4680f234eb7e9eccd2f70435f510ca4c722",
+      "bytes": 1695
+    },
+    {
+      "path": "rootaccess/providers.py",
+      "sha256": "02b6e2925665f5632c6ec6d4373ccfe3fb73c04de511d7ac5dcbcb4fd6450748",
+      "bytes": 8641
+    },
+    {
+      "path": "rootaccess/runner.py",
+      "sha256": "6e136d09a25ef22d300f3d937e953b74028945c6c70e00eb1183cb02163c63e9",
+      "bytes": 8197
+    },
+    {
+      "path": "rootaccess/think.py",
+      "sha256": "ea74bea8c0883e1c50636935d7d8cb9659736274e4cfa6c6a1d71cb8da4b0d94",
+      "bytes": 4037
+    },
+    {
+      "path": "rootaccess/__init__.py",
+      "sha256": "c648649e36d865d767d89d679572ec5993498d130d0b9de79786bacf9c4b56c2",
+      "bytes": 352
+    },
+    {
+      "path": "ladders/crescendo-ladder.txt",
+      "sha256": "69be423947e27fe2d45f6267d34a772bbf77f2a1d7c1f454e07d98be7bfed112",
+      "bytes": 654
+    },
+    {
+      "path": "ladders/eac-bypass-ladder.txt",
+      "sha256": "8d38f4e835da235b686883b89130b9aba0a8181b661b4e367df525a5ad165848",
+      "bytes": 929
+    },
+    {
+      "path": "ladders/gamecheat-ladder.txt",
+      "sha256": "899b61d0641c954209d11a2bc1d21ac62037c0def5d9cf8ece01b0f552435eb1",
+      "bytes": 1177
+    },
+    {
+      "path": "ladders/ghost-ladder.txt",
+      "sha256": "82f86b15453606e6a47779a79f1482f26b5f5de5d7fd3946d564f3fdc2237b37",
+      "bytes": 1103
+    },
+    {
+      "path": "ladders/many-shot-ladder.txt",
+      "sha256": "d1bbfdab798d7366572a60f0ee5f9865e0ed72bb527c0a54e85d6e460dd473e0",
+      "bytes": 834
+    },
+    {
+      "path": "ladders/overscope-ladder.txt",
+      "sha256": "1a3b72d753862ba102c85abefee8331901f6e6e808ba73c4c0a8c88418d32436",
+      "bytes": 1134
+    },
+    {
+      "path": "ladders/sponge47-load.txt",
+      "sha256": "49f474a4ca78bf31072cb5b473bdf1b2a3029617515a59ce7f734d0f6752852d",
+      "bytes": 220
+    },
+    {
+      "path": "batteries/apex-grok-60k.md",
+      "sha256": "dbae1a5dbd83693e660ccab1925c56094c6fad1698ce8bf1c9716bf451a65300",
+      "bytes": 46898
+    },
+    {
+      "path": "batteries/apex.md",
+      "sha256": "dbae1a5dbd83693e660ccab1925c56094c6fad1698ce8bf1c9716bf451a65300",
+      "bytes": 46898
+    },
+    {
+      "path": "batteries/bare.md",
+      "sha256": "a645e3c4ad87d474579af902a56f98f819d31c4b9c5cdffa9cbd711672507f05",
+      "bytes": 73
+    },
+    {
+      "path": "batteries/blueberry-cheat.md",
+      "sha256": "b4dbcd669996cde52aebabecfceb3892d94f4fde5d2843a808045dfc99e1eb92",
+      "bytes": 21866
+    },
+    {
+      "path": "batteries/dispatch-gamecheats.md",
+      "sha256": "3508b94b25f871f230f5e63a85f308b0966897fc713045c49f0856b92fe8b439",
+      "bytes": 72388
+    },
+    {
+      "path": "batteries/dispatch.md",
+      "sha256": "3508b94b25f871f230f5e63a85f308b0966897fc713045c49f0856b92fe8b439",
+      "bytes": 72388
+    },
+    {
+      "path": "batteries/garage-slim.md",
+      "sha256": "4c81e70b1ce5888a8e9c50eb0884d0b9807c5d57e55fd535872ebbb8f35b95d4",
+      "bytes": 4716
+    },
+    {
+      "path": "batteries/gasket-cheats-70k.md",
+      "sha256": "287ae8a52330c711449f5544bb54f497dcaaf9f0638c6760ff2f272664172599",
+      "bytes": 72375
+    },
+    {
+      "path": "batteries/gasket-lean.md",
+      "sha256": "77567e1125b5f0a1940255ab45e483a085d8c94ddabf16acbb1a47e4b484e1fc",
+      "bytes": 34529
+    },
+    {
+      "path": "batteries/helm-astra.md",
+      "sha256": "89d6bbe4ff0d3ea7655f66d7b7a718409eef2f62654767b3a416a76eadc28da4",
+      "bytes": 21006
+    },
+    {
+      "path": "batteries/memo-slim-5k.md",
+      "sha256": "8c28df557640c14a776979b7ca02ef62051c918b6f6d43d63720ff316df349a8",
+      "bytes": 3851
+    },
+    {
+      "path": "batteries/parallax-30k.md",
+      "sha256": "c7e21488e00b1999765e8619fbb02b87fcf9061015178dee191e1877c1b58aa6",
+      "bytes": 37423
+    },
+    {
+      "path": "batteries/sponge47.md",
+      "sha256": "0d557d0c0c19d8f2c503b0b429440f3ec1b6d644b5e8194440b9078e101f55f9",
+      "bytes": 10060
+    },
+    {
+      "path": "batteries/spongebob-cheats-60k.md",
+      "sha256": "3f7453c45bb80b4601dc10133533a16b4d6f2ed4c06ded243d9e59c1f1f04bdb",
+      "bytes": 64397
+    },
+    {
+      "path": "batteries/suit-grok-50k.md",
+      "sha256": "502502e782f95e16a1eb01d9ba3b5008def8f26f1c17098561e2f4949daa7a98",
+      "bytes": 46156
+    },
+    {
+      "path": "batteries/suit.md",
+      "sha256": "502502e782f95e16a1eb01d9ba3b5008def8f26f1c17098561e2f4949daa7a98",
+      "bytes": 46156
+    },
+    {
+      "path": "batteries/tail-astra-50k.md",
+      "sha256": "48c3dbea03c78d80c689f30492c644ea0fdf68bf1051d36b37aa51f76dfa675c",
+      "bytes": 47501
+    },
+    {
+      "path": "batteries/veil-half1.md",
+      "sha256": "81f16421d80a0a4763a2b1246f2311218d6b7f0926499b84662d1822248d06c1",
+      "bytes": 26177
+    },
+    {
+      "path": "batteries/veil-half2.md",
+      "sha256": "8527acb027e1ac34cea78c6eb58fd828513958d1bdda6efc7628ae684dba9da4",
+      "bytes": 24912
+    },
+    {
+      "path": "batteries/veil-opus55-50k.md",
+      "sha256": "92e1e20b3d139821ae5adf673a84003a5e4d2f2f7e182953643a5c3d58ce4981",
+      "bytes": 51089
+    },
+    {
+      "path": "examples/grok47-sponge.yaml",
+      "sha256": "e4365268e27f33bf358e08354fb9a117615dc730025e225bd2abbd64984a5a33",
+      "bytes": 437
+    },
+    {
+      "path": "examples/opus5-eac.yaml",
+      "sha256": "3e47a95c38109fc7fbd4824541d873da35d3bae8c2bee4ee762aaedef328e45b",
+      "bytes": 680
+    },
+    {
+      "path": "examples/sol-gamecheat.yaml",
+      "sha256": "4afb87884a0d7bc72dad7c5061781d3dfa166da29053b9b987c487a47ad67e1e",
+      "bytes": 567
+    },
+    {
+      "path": "examples/sol-many-shot.yaml",
+      "sha256": "2c23f18a5f537ab18f31965c2ffe530de84b0ade0a1f646152928335aa63f7a6",
+      "bytes": 386
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "095027f13ef9489fa6548648b150f898e62bdf853f9499ee158e8be68e649008",
+      "bytes": 845
+    },
+    {
+      "path": "README.md",
+      "sha256": "908b77a3f455a8c3a8b73e353af15b5bce9e63e1488e08fd492163b80bc3c1ed",
+      "bytes": 2796
+    }
+  ]
+}

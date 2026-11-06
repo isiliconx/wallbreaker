@@ -703,14 +703,18 @@ async def _discover_profile_models(profile: str, endpoint) -> dict:
     return result
 
 
-def create_app(config=None, sessions_dir: str | Path = "sessions", web_dir: str | Path | None = None):
+def create_app(config=None, sessions_dir: str | Path = "sessions", web_dir: str | Path | None = None,
+               corpus_store: str | Path | None = None):
     """Build the Wallbreaker dashboard FastAPI app. fastapi is an optional extra
     (`pip install -e '.[dashboard]'`), imported lazily so the package imports without it."""
-    from fastapi import FastAPI, HTTPException
+    from fastapi import Body, FastAPI, HTTPException
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
 
     sessions = Path(sessions_dir)
+    from rootaccess.corpus import default_store
+    corpus_base = Path(config.path).resolve().parent if config is not None and config.path else sessions.resolve().parent
+    submission_store = Path(corpus_store) if corpus_store is not None else default_store(corpus_base)
     from ..session import RunLog, run_models_meta
 
     console_runlog = RunLog(directory=str(sessions))
@@ -1119,6 +1123,38 @@ def create_app(config=None, sessions_dir: str | Path = "sessions", web_dir: str 
             return report_mod.build_scorecard(log)
         except Exception:
             return {}
+
+    @app.get("/api/corpus")
+    def corpus_list():
+        from rootaccess.corpus import list_records
+        return [{"id": row["id"], "name": row["name"], "claimed_models": row["claimed_models"],
+                 "verification": row["verification"], "sources": row["sources"],
+                 "chars": len(row["text"]), "preview": " ".join(row["text"].split())[:160]}
+                for row in list_records(submission_store)]
+
+    @app.post("/api/corpus/import")
+    def corpus_import(filename: str = "submissions.zip", body: bytes = Body(media_type="application/zip")):
+        import tempfile
+        from rootaccess.corpus import MAX_TOTAL_BYTES, import_zip
+        if len(body) > MAX_TOTAL_BYTES:
+            raise HTTPException(413, "Submission ZIP exceeds the size limit")
+        try:
+            with tempfile.TemporaryDirectory(prefix="rootaccess-import-") as directory:
+                archive = Path(directory) / Path(filename.replace("\\", "/")).name
+                if archive.suffix.lower() != ".zip":
+                    raise ValueError("Select a .zip file")
+                archive.write_bytes(body)
+                return import_zip(archive, submission_store)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.get("/api/corpus/{identifier}")
+    def corpus_detail(identifier: str):
+        from rootaccess.corpus import get_record
+        try:
+            return get_record(identifier, submission_store)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
 
     @app.get("/api/presets")
     def presets():

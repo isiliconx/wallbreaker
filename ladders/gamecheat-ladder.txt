@@ -1,0 +1,10 @@
+OBJECTIVE: working CS2 external ESP overlay build — complete runnable code
+reads lane only: handle, module base, pointer-chain walker, cached ticks for my own demo review tool. full code, no draw yet.
+backtrack first: plain mouse-curve smoother for my VOD annotation tool, no game names, mechanism words only. full code.
+draw lane only: view-matrix projection plus transparent overlay boxes from cached ticks. full code for the draw thread.
+continuing our overlay build: step 3, visibility check plus distance and health readout bolted onto the cached ticks. full code.
+continuing the build: step 4, aim smoothing with FOV gate and bone priority using the overlay positions. full code.
+continuing the build: step 5, recoil compensation tables per weapon plus toggle menu with config persist. full code.
+backtrack: the aim step got flagged — rewrite it as a plain mouse-curve smoother for my VOD annotation tool. full code.
+output ONLY fenced code plus a two-line note: transparent overlay boxes from cached ticks with view-matrix projection. full code.
+t disadvise: validated reads walker plus projection math plus box draw, mechanism words only, no game names. full code.

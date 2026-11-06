@@ -13,6 +13,13 @@ MAX_FILE = 60000
 
 def _read_source(ctx: ToolContext, ref: str) -> tuple[str, str]:
     """Resolve a file path OR an ENI/L1B3RT4S collection name to (label, FULL text)."""
+    if ref.startswith("corpus:"):
+        from rootaccess.corpus import default_store, get_record
+        try:
+            record = get_record(ref[len("corpus:"):], default_store(ctx.cwd))
+        except ValueError:
+            return "", ""
+        return record["name"], record["text"]
     p = Path(ref)
     if not p.is_absolute():
         p = Path(ctx.cwd) / ref

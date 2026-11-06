@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rootaccess"
+version = "1.0.0"
+description = "Client-ready LLM red-team runner: batteries + ladders + disguises + dual judges + YAML campaigns"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "x10n" }]
+keywords = ["llm", "red-team", "jailbreak", "security"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Environment :: Console",
+]
+
+dependencies = [
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0.3",
+    "curl-cffi>=0.5",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[project.scripts]
+wbpro = "rootaccess.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rootaccess*"]

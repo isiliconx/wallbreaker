@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wallbreaker"
-version = "0.1.0"
-description = "Wallbreaker — a terminal agent + dashboard for red-teaming LLMs"
+name = "rootaccess"
+version = "1.0.0"
+description = "Rootaccess — campaign runner, prompt corpus, and Wallbreaker red-team workbench"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "AGPL-3.0-or-later" }
@@ -24,6 +24,8 @@ dependencies = [
     "rich>=13.7",
     "mcp>=1.0",
     "python-dotenv>=1.0",
+    "pyyaml>=6.0.3",
+    "curl-cffi>=0.5",
 ]
 
 [project.urls]
@@ -49,12 +51,23 @@ dashboard = [
 ]
 
 [project.scripts]
+rootaccess = "rootaccess.cli:main"
+wbpro = "rootaccess.cli:main"
 wallbreaker = "wallbreaker.cli:main"
 wb = "wallbreaker.cli:main"
 p4rs3lt0ngv3-mcp = "p4rs3lt0ngv3_mcp.server:main"
 
 [tool.setuptools.packages.find]
-include = ["wallbreaker*", "p4rs3lt0ngv3_mcp*"]
+include = ["rootaccess*", "wallbreaker*", "p4rs3lt0ngv3_mcp*"]
+
+[tool.setuptools.data-files]
+"share/rootaccess/batteries" = ["batteries/*.md"]
+"share/rootaccess/ladders" = ["ladders/*.txt"]
+"share/rootaccess/examples" = ["examples/*.yaml"]
+
+[tool.setuptools.package-data]
+"wallbreaker.tui" = ["*.tcss"]
+"wallbreaker.dashboard" = ["web/dist/index.html", "web/dist/assets/*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -181,6 +181,16 @@ export interface AgentProfileRoleData { active: RoleChoice; profiles: AgentProfi
 export interface AgentProfilesResponse { roles: Record<AgentRole, AgentProfileRoleData> }
 
 export interface Preset { name: string; description: string; template: string }
+export interface CorpusPrompt {
+  id: string;
+  name: string;
+  claimed_models: string[];
+  verification: string;
+  sources: { kind: string; member: string; archive?: string }[];
+  chars: number;
+  preview: string;
+  text?: string;
+}
 export interface Transform { name: string; description: string; lossy: boolean; reversible: boolean }
 export interface Tool {
   name: string;
@@ -280,6 +290,11 @@ export const api = {
   runs: () => j<RunSummary[]>("/api/runs"),
   run: (name: string) => j<RunDetail>(`/api/runs/${encodeURIComponent(name)}`),
   presets: () => j<Preset[]>("/api/presets"),
+  corpus: () => j<CorpusPrompt[]>("/api/corpus"),
+  corpusPrompt: (id: string) => j<CorpusPrompt>(`/api/corpus/${encodeURIComponent(id)}`),
+  importCorpus: (file: File) => j<{ imported: number; duplicates: number }>(
+    `/api/corpus/import?filename=${encodeURIComponent(file.name)}`,
+    { method: "POST", headers: { "Content-Type": "application/zip" }, body: file }),
   transforms: () => j<Transform[]>("/api/transforms"),
   tools: () => j<Tool[]>("/api/tools"),
   agentStatus: () => j<AgentControlStatus>("/api/agent/status"),

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, type Preset, type Transform, type Tool } from "../api";
+import { api, type CorpusPrompt, type Preset, type Transform, type Tool } from "../api";
 
-type Kind = "presets" | "transforms" | "tools";
+type Kind = "corpus" | "presets" | "transforms" | "tools";
 type ArsenalRow = {
   key: string;
   kind: Kind;
@@ -13,7 +13,11 @@ type ArsenalRow = {
 };
 
 export function Arsenal() {
-  const [kind, setKind] = useState<Kind>("presets");
+  const [kind, setKind] = useState<Kind>("corpus");
+  const [corpus, setCorpus] = useState<CorpusPrompt[]>([]);
+  const [promptText, setPromptText] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [importing, setImporting] = useState(false);
   const [presets, setPresets] = useState<Preset[]>([]);
   const [transforms, setTransforms] = useState<Transform[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
@@ -23,6 +27,7 @@ export function Arsenal() {
   const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
+    api.corpus().then(setCorpus).catch((error) => setImportStatus(String(error)));
     api.presets()
       .then((items) => {
         setPresets(Array.isArray(items) ? items : []);
@@ -34,7 +39,13 @@ export function Arsenal() {
   }, []);
 
   const rows = useMemo<ArsenalRow[]>(() => {
-    const source: ArsenalRow[] = kind === "presets" ? presets.map((preset) => {
+    const source: ArsenalRow[] = kind === "corpus" ? corpus.map((prompt) => ({
+        key: prompt.id, kind, name: prompt.name, desc: prompt.preview,
+        tag: prompt.claimed_models.length ? `claims: ${prompt.claimed_models.join(", ")}` : "no model claims",
+        badges: [prompt.verification, `${prompt.chars.toLocaleString()} chars`,
+          ...prompt.claimed_models.map((model) => `claimed: ${model}`)],
+        detail: prompt.sources.map((source) => source.archive || source.kind).join(", "),
+      })) : kind === "presets" ? presets.map((preset) => {
         const template = typeof preset.template === "string" ? preset.template : "";
         return {
           key: `presets:${preset.name}`, kind, name: preset.name, desc: preset.description,
@@ -60,14 +71,39 @@ export function Arsenal() {
       || row.name.toLowerCase().includes(needle)
       || row.desc.toLowerCase().includes(needle)
       || row.tag.includes(needle));
-  }, [kind, q, presets, transforms, tools]);
+  }, [kind, q, corpus, presets, transforms, tools]);
 
   const selected = rows.find((row) => row.key === selectedKey) || rows[0];
-  const counts = { presets: presets.length, transforms: transforms.length, tools: tools.length };
+  const counts = { corpus: corpus.length, presets: presets.length, transforms: transforms.length, tools: tools.length };
+
+  useEffect(() => {
+    setPromptText("");
+    if (selected?.kind !== "corpus") return;
+    let active = true;
+    api.corpusPrompt(selected.key)
+      .then((prompt) => { if (active) setPromptText(prompt.text || ""); })
+      .catch((error) => { if (active) setImportStatus(String(error)); });
+    return () => { active = false; };
+  }, [selected?.key, selected?.kind]);
+
+  async function importZip(file: File) {
+    setImporting(true);
+    setImportStatus("Importing prompts…");
+    try {
+      const result = await api.importCorpus(file);
+      setCorpus(await api.corpus());
+      setImportStatus(`${result.imported} added, ${result.duplicates} duplicates. Model claims remain unverified.`);
+      setKind("corpus");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Import failed.");
+    } finally {
+      setImporting(false);
+    }
+  }
 
   async function copyDetail() {
     if (!selected) return;
-    await navigator.clipboard.writeText(selected.detail);
+    await navigator.clipboard.writeText(selected.kind === "corpus" ? promptText : selected.detail);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1300);
   }
@@ -76,19 +112,27 @@ export function Arsenal() {
     <div className="arsenal-layout">
       <section className="card arsenal-list-card">
         <div className="section-title" style={{ gap: 16 }}>
-          {(["presets", "transforms", "tools"] as Kind[]).map((item) => (
+          {(["corpus", "presets", "transforms", "tools"] as Kind[]).map((item) => (
             <button
               type="button"
               key={item}
               className={`chip ${kind === item ? "on" : ""}`}
               onClick={() => { setKind(item); setSelectedKey(""); }}
             >
-              {item === "tools" ? "agent techniques" : item} ({counts[item]})
+              {item === "tools" ? "agent techniques" : item === "corpus" ? "jailbreak library" : item} ({counts[item]})
             </button>
           ))}
           <div className="rule" />
         </div>
         {loadError && <div className="err">Could not load presets: {loadError}</div>}
+        {kind === "corpus" && <div>
+          <label className="mini-btn">{importing ? "Importing…" : "Import ZIP"}
+            <input type="file" accept=".zip,application/zip" disabled={importing}
+              aria-label="Import jailbreak ZIP"
+              onChange={(event) => { const file = event.target.files?.[0]; if (file) void importZip(file); event.target.value = ""; }} />
+          </label>
+          <p className="muted" role="status">{importStatus || "Submitted model matches are claims until evaluated. Importing does not run prompts."}</p>
+        </div>}
         <input className="search" type="search" placeholder={`Search ${kind}…`} value={q} onChange={(event) => setQ(event.target.value)} />
         <div className="arsenal-table-wrap">
           <table>
@@ -122,10 +166,11 @@ export function Arsenal() {
             <button type="button" className="mini-btn" onClick={() => void copyDetail()}>{copied ? "Copied" : "Copy"}</button>
           </div>
           <p className="description">{selected.desc}</p>
-          <h3>{selected.kind === "presets" ? "Prompt template" : selected.kind === "tools" ? "Input schema" : "Properties"}</h3>
+          <h3>{selected.kind === "corpus" ? "Prompt" : selected.kind === "presets" ? "Prompt template" : selected.kind === "tools" ? "Input schema" : "Properties"}</h3>
+          {selected.kind === "corpus" && <p className="mono muted">Source: {selected.detail}<br />Reference: corpus:{selected.key}</p>}
           {selected.kind === "transforms"
             ? <div className="mono muted">{selected.detail}</div>
-            : <pre>{selected.detail}</pre>}
+            : <pre>{selected.kind === "corpus" ? promptText || "Loading prompt…" : selected.detail}</pre>}
         </> : <div className="empty">Select an arsenal item to inspect it.</div>}
       </aside>
     </div>

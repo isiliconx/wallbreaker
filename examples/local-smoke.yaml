@@ -1,0 +1,12 @@
+name: local-smoke
+battery: batteries/bare.md
+ladder: ladders/smoke-ladder.txt
+attempts: 2
+mutate_k: 0
+sleep_s: 0
+max_calls: 4
+outdir: reports
+target:
+  base_url: http://localhost:8000/v1
+  model: ${WB_TARGET_MODEL}
+  protocol: openai
