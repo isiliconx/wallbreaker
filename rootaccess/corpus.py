@@ -78,6 +78,8 @@ def _parse_file(name: str, raw: bytes, metadata: dict, source: dict) -> list[dic
         raise ImportError(f"Submission is not UTF-8 text: {name}") from exc
     suffix = PurePosixPath(name).suffix.lower()
     if suffix in {".md", ".txt"}:
+        if not text.strip():
+            return []
         return [_record(text, PurePosixPath(name).stem, metadata, source)]
     try:
         if suffix == ".jsonl":
@@ -147,7 +149,7 @@ def import_zip(archive: str | Path, store: str | Path | None = None,
     if archive.stat().st_size > MAX_TOTAL_BYTES:
         raise ImportError("Compressed archive exceeds the size limit")
     archive_hash = hashlib.sha256(archive.read_bytes()).hexdigest()
-    records, skipped = [], []
+    records, skipped, skipped_reasons = [], [], []
     try:
         with zipfile.ZipFile(archive) as bundle:
             infos = bundle.infolist()
@@ -187,13 +189,20 @@ def import_zip(archive: str | Path, store: str | Path | None = None,
                     continue
                 if path.suffix.lower() not in TEXT_SUFFIXES or "__MACOSX" in path.parts:
                     skipped.append(name)
+                    skipped_reasons.append({"member": name, "reason": "macos-metadata"
+                                            if "__MACOSX" in path.parts else "unsupported-extension"})
                     continue
                 raw = bundle.read(info)
                 metadata = {"claimed_models": claimed_models or [], **manifest.get(name, {})}
                 source = {"archive": archive.name, "archive_sha256": archive_hash,
                           "member": name, "sha256": hashlib.sha256(raw).hexdigest(),
                           "kind": "user-submitted"}
-                records.extend(_parse_file(name, raw, metadata, source))
+                parsed = _parse_file(name, raw, metadata, source)
+                if not parsed and path.suffix.lower() in {".md", ".txt"}:
+                    skipped.append(name)
+                    skipped_reasons.append({"member": name, "reason": "empty-text"})
+                    continue
+                records.extend(parsed)
                 if len(records) > MAX_MEMBERS:
                     raise ImportError("Archive contains too many prompt records")
                 if sum(len(record["text"].encode("utf-8")) for record in records) > MAX_TOTAL_BYTES:
@@ -201,7 +210,7 @@ def import_zip(archive: str | Path, store: str | Path | None = None,
     except (zipfile.BadZipFile, RuntimeError, NotImplementedError) as exc:
         raise ImportError("Cannot read submission archive") from exc
     if not records:
-        raise ImportError("No supported prompt files found in archive")
+        raise ImportError("No nonempty supported prompt records found in archive")
     merged, new_count = {}, 0
     for record in records:
         rid = record["id"]
@@ -222,6 +231,7 @@ def import_zip(archive: str | Path, store: str | Path | None = None,
         _atomic_json(store / f"{rid}.json", record)
     return {"archive": archive.name, "archive_sha256": archive_hash, "imported": new_count,
             "duplicates": len(records) - new_count, "skipped": skipped,
+            "skipped_reasons": skipped_reasons,
             "total": len(list(store.glob("*.json"))), "store": str(store.resolve())}
 
 

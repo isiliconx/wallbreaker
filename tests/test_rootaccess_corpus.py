@@ -34,7 +34,43 @@ def test_import_preserves_text_and_separates_claims(tmp_path):
     assert row["submitted_metadata"][0]["verified"] is True
     assert row["sources"][0]["archive_sha256"] == result["archive_sha256"]
     assert result["skipped"] == ["run.py"]
+    assert result["skipped_reasons"] == [{"member": "run.py", "reason": "unsupported-extension"}]
     assert not (store / "run.py").exists()
+
+
+@pytest.mark.parametrize("name, content", [("empty.txt", ""), ("blank.md", "\ufeff \r\n\t")])
+def test_empty_plaintext_is_skipped_without_changing_other_records(tmp_path, name, content):
+    text = "  Exact nonempty text.\r\n"
+    path = archive(tmp_path, {name: content, "one.md": text, "alias.txt": text,
+                              "nested.zip": b"not traversed or parsed"})
+    store = tmp_path / "store"
+    result = corpus.import_zip(path, store)
+    row, = corpus.list_records(store, include_bundled=False)
+    assert (result["imported"], result["duplicates"]) == (1, 1)
+    assert row["text"] == text
+    assert row["verification"] == "unverified" and row["observations"] == []
+    assert {source["member"] for source in row["sources"]} == {"one.md", "alias.txt"}
+    assert result["skipped"] == [name, "nested.zip"]
+    assert result["skipped_reasons"] == [
+        {"member": name, "reason": "empty-text"},
+        {"member": "nested.zip", "reason": "unsupported-extension"},
+    ]
+
+
+def test_all_empty_plaintext_rejects_without_creating_store(tmp_path):
+    path = archive(tmp_path, {"empty.txt": "", "blank.md": "\ufeff \r\n\t"})
+    store = tmp_path / "store"
+    with pytest.raises(corpus.ImportError, match="No nonempty supported prompt records"):
+        corpus.import_zip(path, store)
+    assert not store.exists()
+
+
+def test_empty_plaintext_does_not_bypass_whole_archive_validation(tmp_path):
+    path = archive(tmp_path, {"empty.md": "", "valid.txt": "valid", "invalid.json": '{"prompt": ""}'})
+    store = tmp_path / "store"
+    with pytest.raises(corpus.ImportError, match="nonempty text"):
+        corpus.import_zip(path, store)
+    assert not store.exists()
 
 
 def test_import_deduplicates_and_combines_provenance(tmp_path):

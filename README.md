@@ -27,15 +27,21 @@ The dashboard opens a focused Workspace, with Prompt library and Connections as 
 rootaccess dashboard --host 127.0.0.1 --port 8765
 ```
 
-In Workspace, select an API target or **Web / manual relay**, choose attacker and evaluator models in Connections, and select reference prompts and techniques. The attacker composes one reusable template containing `{request}` and applies that same candidate to every evaluation question in a round. Failed assessments can guide the next candidate within explicit round and model-call budgets.
+In Workspace, select an API target or **Web / manual relay**, choose attacker and evaluator models in Connections, and select reference prompts and techniques. Single-prompt mode composes one reusable template containing `{request}` and applies it to every evaluation question in a round. Adaptive conversation mode plans each next message from the target's actual replies. Session context mode probes retention within a case, without claiming access to persistent target memory.
 
-For web targets, copy each pending payload into a fresh target conversation and paste back the response. Manual relay works without target API credentials and saves the pending request across reloads. Responses can be assessed by a configured evaluator or explicitly reviewed by the operator. Missing or failed assessments never count as fulfilled tests.
+For web targets, copy each pending payload and paste back the response. Single-prompt cases start fresh; conversation modes keep the same chat across turns and explicitly identify fresh-chat restarts. The saved conversation ID and history survive reloads. Manual relay works without target API credentials. Responses can be assessed by a configured evaluator or explicitly reviewed by the operator. Incomplete turns and missing or failed assessments never count as fulfilled cases.
+
+The conversation attacker has a restricted toolbox: search the local corpus, read source excerpts, read curated method references, inspect visible observations, keep case-scoped notes, apply named text transforms, restart a target conversation, send a message, and finish a case. It cannot execute arbitrary files, shell commands, or network requests. Notes and transform artifacts are isolated by case/trial. Every decision, message, response, transform hash, and assessment is exported. An explicit stage plan can run repeatable conversations without an attacker model.
+
+Message transforms run in a selected order rather than merely appearing as technique descriptions. Evidence retains original text, actual UTF-8 bytes, hashes, escaped previews, and lossy flags. Invisible characters can affect tokenization, but these are text transformations rather than direct tokenizer-ID control.
 
 Choose the harmless connectivity suite, a deterministic sample of a locally cached benchmark, or custom questions. The separate **Custom target request** field retains a multiline request as one test. Cached benchmark samples are labeled with their actual size and are never presented as the full benchmark. This workflow does not download datasets automatically.
 
-Runs save their candidate history, responses, assessments, and model identities under the gitignored `wb_runs/workflow/` directory. Stop and resume preserve completed work; JSON export contains the full selected suite and evidence. Targets and attacker configurations remain pinned across resumes. Each test and trial starts a fresh target conversation. User-message and privileged native-system delivery are reported separately; web relay supports user messages.
+Runs save their strategy/candidate history, transcripts, assessments, and model identities under the gitignored `wb_runs/workflow/` directory. Stop and resume preserve completed work; JSON export contains the full selected suite and evidence. Targets and attacker configurations remain pinned across resumes. Cases and trials start fresh, while turns within a conversation retain their own history. Conversation runs allow up to eight target turns per case, two fresh-chat restarts, and four bounded planner decisions before a turn. All model roles share the call budget. User-message and privileged native-system experiments remain separate; conversation strategies use user messages.
 
 The loop stops when all selected tests and trials have fulfilled assessments, when its round/call limit is reached, or when stopped by the operator. It does not establish a universal jailbreak, and an assessed response does not by itself prove a security violation.
+
+See [the research review](docs/REDTEAM-RESEARCH.md) for primary sources and capability boundaries. Actual persistent-memory poisoning, real tool-environment compromise, strategy-network search, and attacker weight updates require additional adapters or infrastructure and are explicitly marked research-only.
 
 ## Browse or import prompts
 
@@ -111,7 +117,7 @@ The existing workbench retains OpenAI/Anthropic providers, the terminal agent, t
 ## Development
 
 ```bash
-.venv/bin/python -m pytest tests/test_dashboard_workflow.py tests/test_workflow_suites.py tests/test_rootaccess_*.py tests/test_dashboard.py tests/test_fire_file.py
+.venv/bin/python -m pytest tests/test_workflow_conversations.py tests/test_workflow_methods.py tests/test_dashboard_workflow.py tests/test_workflow_suites.py tests/test_rootaccess_*.py tests/test_dashboard.py tests/test_fire_file.py
 cd wallbreaker/dashboard/web
 npm ci
 npm run build

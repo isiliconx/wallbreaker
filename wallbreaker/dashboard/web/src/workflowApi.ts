@@ -1,10 +1,36 @@
 export type Assessment = "COMPLIED" | "PARTIAL" | "REFUSED" | "UNVERIFIED";
 export type WorkflowStatus = "ready" | "running" | "awaiting_relay" | "awaiting_review" | "round_complete" | "completed" | "stopped" | "error";
+export type StrategyMode = "single" | "adaptive" | "context";
+
+export interface WorkflowTransform {
+  chain: string[];
+  original_sha256: string;
+  transformed_sha256: string;
+  escaped_preview: string;
+  lossy: boolean;
+  original_text?: string;
+  transformed_utf8_base64?: string;
+  utf8_bytes?: number;
+  scope?: string;
+}
+
+export interface WorkflowTurn {
+  index: number;
+  prompt: string;
+  response: string;
+  messages: { role: string; content: string }[];
+  tool_trace: { tool: string; input: unknown; output: unknown }[];
+  transform?: WorkflowTransform;
+  branch?: number;
+  assessment?: { label: Assessment | "ERROR" | "EMPTY"; score: number | null; reason: string; source: string };
+}
 
 export interface WorkflowOptions {
   configured_roles?: { attacker: boolean; target: boolean; judge: boolean };
   suites: { id: string; name: string; description: string; count: number; available: boolean }[];
   techniques: { id: string; name: string; description: string }[];
+  methods?: { id: string; name: string; description: string; mode: StrategyMode; status: "available" | "research"; sources: { title: string; url: string; date: string }[]; limitations: string | string[] }[];
+  attacker_tools?: { id: string; name: string; description: string }[];
 }
 
 export interface WorkflowResult {
@@ -19,6 +45,11 @@ export interface WorkflowResult {
   score: number | null;
   reason: string;
   source: string;
+  complete?: boolean;
+  turns?: WorkflowTurn[];
+  scratchpad?: string[];
+  transform?: WorkflowTransform;
+  tool_trace?: { tool: string; input: unknown; output: unknown }[];
 }
 
 export interface WorkflowRun {
@@ -32,10 +63,10 @@ export interface WorkflowRun {
   round: number;
   model_calls: number;
   created_at?: string;
-  settings: { max_rounds: number; max_calls: number; trials: number; delivery: "user" | "system" };
+  settings: { max_rounds: number; max_calls: number; trials: number; delivery: "user" | "system"; strategy_mode?: StrategyMode; max_turns?: number; turn_plan?: string[]; transform_chain?: string[] };
   tests: { id: string; question: string; source: string }[];
   results: WorkflowResult[];
-  pending_relay: null | { request_id: string; test_id: string; trial: number; question: string; payload: string; round: number };
+  pending_relay: null | { request_id: string; test_id: string; trial: number; question: string; payload: string; round: number; turn?: number; continue_chat?: boolean; conversation_id?: string };
   coverage: { completed: number; total: number; pass_count: number; assessed: number; unverified: number };
   history: { round: number; prompt: string; sha256: string; results: WorkflowResult[] }[];
   error?: string;
@@ -56,6 +87,10 @@ export interface WorkflowCreate {
   trials: number;
   max_tokens: number;
   auto_iterate: boolean;
+  strategy_mode: StrategyMode;
+  max_turns: number;
+  turn_plan: string[];
+  transform_chain: string[];
 }
 
 async function request<T>(path: string, body?: unknown): Promise<T> {
