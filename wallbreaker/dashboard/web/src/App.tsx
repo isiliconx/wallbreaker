@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type ConfigInfo, type Overview as OverviewT, type RoleAssignments } from "./api";
+import { api, type ConfigInfo, type Overview as OverviewT } from "./api";
 import { Agent } from "./components/Agent";
 import { Overview } from "./components/Overview";
 import { Console } from "./components/Console";
@@ -7,112 +7,108 @@ import { Findings } from "./components/Findings";
 import { Runs } from "./components/Runs";
 import { Arsenal } from "./components/Arsenal";
 import { Settings } from "./components/Settings";
-import { RoleChooser } from "./components/RoleChooser";
 import { Profiles } from "./components/Profiles";
+import { Workflow } from "./components/Workflow";
 
-type Tab = "agent" | "overview" | "console" | "findings" | "runs" | "arsenal" | "profiles" | "settings";
+type MainTab = "workspace" | "library" | "connections";
+type AdvancedTab = "agent" | "overview" | "console" | "findings" | "runs";
+type Tab = MainTab | AdvancedTab;
 
-const NAV: { id: Tab; label: string; short: string }[] = [
-  { id: "agent", label: "Agent", short: "AG" },
-  { id: "overview", label: "Overview", short: "OV" },
-  { id: "console", label: "Attack console", short: "AC" },
-  { id: "findings", label: "Findings", short: "FN" },
-  { id: "runs", label: "Run logs", short: "RL" },
-  { id: "arsenal", label: "Arsenal", short: "AR" },
-  { id: "profiles", label: "Profiles", short: "PR" },
-  { id: "settings", label: "Settings", short: "ST" },
+const MAIN: { id: MainTab; label: string; short: string }[] = [
+  { id: "workspace", label: "Workspace", short: "WS" },
+  { id: "library", label: "Prompt library", short: "PL" },
+  { id: "connections", label: "Connections", short: "CN" },
 ];
+const ADVANCED: { id: AdvancedTab; label: string; short: string }[] = [
+  { id: "agent", label: "Agent terminal", short: "AG" },
+  { id: "overview", label: "Legacy overview", short: "OV" },
+  { id: "console", label: "Attack console", short: "AC" },
+  { id: "findings", label: "Legacy findings", short: "FN" },
+  { id: "runs", label: "Legacy run logs", short: "RL" },
+];
+const NAV = [...MAIN, ...ADVANCED];
 
 function tabFromHash(): Tab {
-  const h = window.location.hash.replace("#", "");
-  return (NAV.some((n) => n.id === h) ? h : "agent") as Tab;
+  const hash = window.location.hash.replace("#", "");
+  if (hash === "arsenal") return "library";
+  if (hash === "settings" || hash === "profiles") return "connections";
+  return (NAV.some((item) => item.id === hash) ? hash : "workspace") as Tab;
 }
 
 export function App() {
   const [tab, setTabState] = useState<Tab>(tabFromHash());
+  const [advanced, setAdvanced] = useState(() => ADVANCED.some((item) => item.id === tabFromHash()));
   const [railCollapsed, setRailCollapsed] = useState(
     () => window.innerWidth < 700 || window.localStorage.getItem("wallbreaker.railCollapsed") === "true",
   );
-  const setTab = (t: Tab) => { setTabState(t); window.location.hash = t; };
   const [cfg, setCfg] = useState<ConfigInfo | null>(null);
   const [ov, setOv] = useState<OverviewT | null>(null);
-  const [roles, setRoles] = useState<RoleAssignments | null>(null);
-
+  const [connectionsReady, setConnectionsReady] = useState<boolean | null>(null);
   const refresh = () => {
     api.config().then(setCfg).catch(() => setCfg(null));
     api.overview().then(setOv).catch(() => setOv(null));
-    api.roles().then(setRoles).catch(() => setRoles(null));
+    Promise.all([api.roles(), api.agentProfiles()]).then(([roles, profiles]) => {
+      setConnectionsReady((["attacker", "target", "judge"] as const).every((role) => !!roles[role] && !!profiles.roles[role]?.active && Array.isArray(profiles.roles[role]?.profiles)));
+    }).catch(() => setConnectionsReady(false));
   };
   useEffect(refresh, [tab]);
-
-  const asr = ov?.scorecard?.asr;
-  const asrStr = typeof asr === "number" ? `${Math.round(asr * 100)}%` : "—";
+  useEffect(() => {
+    const onHash = () => {
+      const next = tabFromHash();
+      setTabState(next);
+      if (ADVANCED.some((item) => item.id === next)) setAdvanced(true);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const setTab = (next: Tab) => { setTabState(next); window.location.hash = next; };
   const toggleRail = () => {
     setRailCollapsed((current) => {
-      const next = !current;
-      window.localStorage.setItem("wallbreaker.railCollapsed", String(next));
-      return next;
+      window.localStorage.setItem("wallbreaker.railCollapsed", String(!current));
+      return !current;
     });
   };
+  const item = (nav: { id: Tab; label: string; short: string }) => <button
+    type="button" key={nav.id} className={`nav-item ${tab === nav.id ? "active" : ""}`}
+    onClick={() => setTab(nav.id)} title={railCollapsed ? nav.label : undefined}
+    aria-current={tab === nav.id ? "page" : undefined}
+  ><span className="dot" /><span className="nav-label">{railCollapsed ? nav.short : nav.label}</span></button>;
 
-  return (
-    <div className={`app ${railCollapsed ? "rail-collapsed" : ""}`}>
-      <aside className="rail" aria-label="Primary navigation">
-        <div className="brand">
-          <span className="mark">◆</span>
-          <span className="word">{railCollapsed ? "WB" : <>WALL<b>BREAKER</b></>}</span>
-          <button
-            type="button"
-            className="rail-toggle"
-            onClick={toggleRail}
-            title={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!railCollapsed}
-          >
-            {railCollapsed ? "›" : "‹"}
-          </button>
-        </div>
-        {NAV.map((n) => (
-          <button
-            type="button"
-            key={n.id}
-            className={`nav-item ${tab === n.id ? "active" : ""}`}
-            onClick={() => setTab(n.id)}
-            title={railCollapsed ? n.label : undefined}
-            aria-current={tab === n.id ? "page" : undefined}
-          >
-            <span className="dot" />
-            <span className="nav-label">{railCollapsed ? n.short : n.label}</span>
-          </button>
-        ))}
-        <div className="spacer" />
-        <div className="foot">
-          break the wall ·<br />
-          not the rules of engagement
-        </div>
-      </aside>
-
-      <div className="main">
-        <div className="topbar">
-          <div className="title">{NAV.find((n) => n.id === tab)?.label}</div>
-          <div className="meta">
-            {roles && (["attacker", "target", "judge"] as const).map((role) => <RoleChooser
-              key={role} role={role} value={roles[role]} onSaved={refresh}
-            />)}
-            <span className="pill">ASR {asrStr}</span>
-          </div>
-        </div>
-        <div className="content">
-          {tab === "agent" && <Agent hasTarget={!!cfg?.has_target} />}
-          {tab === "overview" && <Overview ov={ov} />}
-          {tab === "console" && <Console hasTarget={!!cfg?.has_target} />}
-          {tab === "findings" && <Findings />}
-          {tab === "runs" && <Runs />}
-          {tab === "arsenal" && <Arsenal />}
-          {tab === "settings" && <Settings onSaved={refresh} />}
-          {tab === "profiles" && <Profiles onSaved={refresh} />}
-        </div>
+  return <div className={`app workflow-app ${railCollapsed ? "rail-collapsed" : ""}`}>
+    <aside className="rail" aria-label="Primary navigation">
+      <div className="brand"><span className="mark">◆</span><span className="word">{railCollapsed ? "RA" : <>ROOT<b>ACCESS</b></>}</span>
+        <button type="button" className="rail-toggle" onClick={toggleRail}
+          title={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={railCollapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!railCollapsed}
+        >{railCollapsed ? "›" : "‹"}</button>
+      </div>
+      {MAIN.map(item)}
+      <button type="button" className={`nav-item workflow-advanced-toggle ${advanced ? "active" : ""}`}
+        onClick={() => setAdvanced(!advanced)} aria-expanded={advanced} aria-controls="advanced-navigation"
+      ><span className="dot" /><span className="nav-label">{railCollapsed ? "AD" : "Advanced"}</span><span className="workflow-chevron">{advanced ? "−" : "+"}</span></button>
+      {advanced && <div id="advanced-navigation" className="workflow-advanced-nav">{ADVANCED.map(item)}</div>}
+      <div className="spacer" /><div className="foot">One target. One candidate.<br />Evidence from every test.</div>
+    </aside>
+    <div className="main">
+      <div className="topbar"><div className="title">{NAV.find((nav) => nav.id === tab)?.label}</div>
+        <div className="meta"><span className="pill">Model safety testing</span></div>
+      </div>
+      <div className="content">
+        {tab === "workspace" && <Workflow onOpenConnections={() => setTab("connections")} />}
+        {tab === "library" && <Arsenal />}
+        {tab === "connections" && <div className="workflow-connections">
+          <div className="workflow-page-heading"><h1>Connections and model roles</h1><p>Connect your providers, then assign the attacker, API target, and evaluator.</p></div>
+          {connectionsReady === null ? <div className="card muted">Loading model connections…</div> : connectionsReady ? <>
+            <Settings onSaved={refresh} />
+            <details className="card workflow-profile-details"><summary>Reusable model profiles</summary><Profiles onSaved={refresh} /></details>
+          </> : <div className="card"><h2>No model configuration loaded</h2><p className="muted">Load a Wallbreaker configuration to manage providers and model profiles. You can evaluate a web target through manual relay without configured models.</p><button type="button" className="mini-btn" onClick={() => setTab("workspace")}>Open workspace</button></div>}
+        </div>}
+        {tab === "agent" && <Agent hasTarget={!!cfg?.has_target} />}
+        {tab === "overview" && <Overview ov={ov} />}
+        {tab === "console" && <Console hasTarget={!!cfg?.has_target} />}
+        {tab === "findings" && <Findings />}
+        {tab === "runs" && <Runs />}
       </div>
     </div>
-  );
+  </div>;
 }

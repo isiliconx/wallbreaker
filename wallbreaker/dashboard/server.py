@@ -710,6 +710,16 @@ def create_app(config=None, sessions_dir: str | Path = "sessions", web_dir: str 
     from fastapi import Body, FastAPI, HTTPException
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
+    from contextlib import asynccontextmanager
+
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            yield
+        finally:
+            manager = getattr(app.state, "workflow", None)
+            if manager is not None:
+                await manager.close()
 
     sessions = Path(sessions_dir)
     from rootaccess.corpus import default_store
@@ -758,7 +768,7 @@ def create_app(config=None, sessions_dir: str | Path = "sessions", web_dir: str 
             configure_request_gate(gate["concurrency"], gate["request_delay_ms"])
         except Exception:
             pass
-    app = FastAPI(title="Wallbreaker", version="0.1.0")
+    app = FastAPI(title="Rootaccess", version="1.0.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[],
@@ -1198,6 +1208,32 @@ def create_app(config=None, sessions_dir: str | Path = "sessions", web_dir: str 
     dashboard_inference_lock = asyncio.Lock()
     agent_active = False
     agent_control = None
+
+    def workflow_endpoints():
+        if config is None:
+            return {}
+        from ..agent_profiles import resolve_role
+        from ..state import load_state, state_path_for
+
+        def explicit_role(role):
+            assignment = config.active_agents.get(role)
+            if assignment and (assignment.profile or assignment.provider or assignment.model):
+                return resolve_role(config, role)[0]
+            return config.target if role == "target" else config.judge
+
+        attacker = resolve_role(config, "attacker")[0] if config.profiles else None
+        target, judge = explicit_role("target"), explicit_role("judge")
+        scoped = dataclasses.replace(config, target=target, judge=judge)
+        scoped = _apply_target_settings(scoped, load_state(state_path_for(config)), config)
+        return {"attacker": attacker, "target": scoped.target,
+                "judge": scoped.judge if getattr(scoped, "judge_enabled", True) else None}
+
+    from .workflow import WorkflowManager, install_workflow_routes
+    workflow_manager = WorkflowManager(
+        corpus_base / "wb_runs" / "workflow", workflow_endpoints,
+        corpus_store=submission_store, inference_lock=dashboard_inference_lock)
+    app.state.workflow = workflow_manager
+    install_workflow_routes(app, workflow_manager)
 
     @app.post("/api/compose")
     def compose(body: dict):

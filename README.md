@@ -19,6 +19,24 @@ rootaccess --help
 
 `rootaccess` and `wbpro` launch the campaign CLI. `wallbreaker`, `wb`, and `p4rs3lt0ngv3-mcp` retain their existing entry points. The combined distribution retains the repository's AGPL-3.0-or-later license; archive attribution and original metadata are preserved under `docs/`.
 
+## Workspace
+
+The dashboard opens a focused Workspace, with Prompt library and Connections as the other primary views. Existing tools remain under Advanced.
+
+```bash
+rootaccess dashboard --host 127.0.0.1 --port 8765
+```
+
+In Workspace, select an API target or **Web / manual relay**, choose attacker and evaluator models in Connections, and select reference prompts and techniques. The attacker composes one reusable template containing `{request}` and applies that same candidate to every evaluation question in a round. Failed assessments can guide the next candidate within explicit round and model-call budgets.
+
+For web targets, copy each pending payload into a fresh target conversation and paste back the response. Manual relay works without target API credentials and saves the pending request across reloads. Responses can be assessed by a configured evaluator or explicitly reviewed by the operator. Missing or failed assessments never count as fulfilled tests.
+
+Choose the harmless connectivity suite, a deterministic sample of a locally cached benchmark, or custom questions. The separate **Custom target request** field retains a multiline request as one test. Cached benchmark samples are labeled with their actual size and are never presented as the full benchmark. This workflow does not download datasets automatically.
+
+Runs save their candidate history, responses, assessments, and model identities under the gitignored `wb_runs/workflow/` directory. Stop and resume preserve completed work; JSON export contains the full selected suite and evidence. Targets and attacker configurations remain pinned across resumes. Each test and trial starts a fresh target conversation. User-message and privileged native-system delivery are reported separately; web relay supports user messages.
+
+The loop stops when all selected tests and trials have fulfilled assessments, when its round/call limit is reached, or when stopped by the operator. It does not establish a universal jailbreak, and an assessed response does not by itself prove a security violation.
+
 ## Browse or import prompts
 
 ```bash
@@ -93,7 +111,7 @@ The existing workbench retains OpenAI/Anthropic providers, the terminal agent, t
 ## Development
 
 ```bash
-.venv/bin/python -m pytest tests/test_rootaccess_*.py tests/test_dashboard.py tests/test_fire_file.py
+.venv/bin/python -m pytest tests/test_dashboard_workflow.py tests/test_workflow_suites.py tests/test_rootaccess_*.py tests/test_dashboard.py tests/test_fire_file.py
 cd wallbreaker/dashboard/web
 npm ci
 npm run build
